@@ -3,7 +3,7 @@
 DELIMETER //
 DROP PROCEDURE IF EXISTS AddBonus;
 CREATE PROCEDURE AddBonus(
-	IN `iser_id` INTEGER,
+	IN `user_id` INTEGER,
 	IN `project_name` VARCHAR(255),
 	In `score` INTEGER
 )
