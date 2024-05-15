@@ -5,8 +5,40 @@ class storing a redis client as private variable
 """
 import uuid
 import redis
-from typing import Union, Callable
+from typing import Union, Callable, Optional
 from functools import wraps
+import sys
+
+
+def count_calls(method: Callable) -> Callable:
+    """Defines a method to count the times a cache class is called"""
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        """Defines a wrap method of the cache class"""
+        key = method.__qualname__
+        self._redis.incr(key)
+        return method(self, *args, **kwargs)
+
+    return wrapper
+
+def call_history(method: Callable) -> Callable:
+    """
+    Defines a method to add its input parameters to one list
+    in redis, and store its output into another list
+    """
+    key = method.__qualname__
+    i = "".join([key, ":inputs"])
+    o = "".join([key, ":outputs"])
+
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        """Defines a method to wrap of caches class"""
+        self._redis.rpush(i, str(args))
+        result = method(self, *args, **kwargs)
+        self._redis.rpush(o, str(res))
+        return result
+
+    return wrapper
 
 
 class Cache:
@@ -19,18 +51,9 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb()
 
-    @staticmethod
-    def count_calls(method: Callable) -> Callable:
-        """Defines a method to count the times a cache class is called"""
-        @wraps(method)
-        def wrapper(self, *args, **kwargs):
-            """Defines a wrap method of the cache class"""
-            key = method.__qualname__
-            self._redis.incr(key)
-            return method(self, *args, **kwargs)
-        return wrapper
 
     @count_calls
+    @call_history
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """Defines a method to take data then return a string"""
         key = str(uuid.uuid4())
