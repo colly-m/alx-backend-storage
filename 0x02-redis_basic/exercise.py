@@ -77,3 +77,18 @@ class Cache:
     def get_int(self, key: str) -> Union[int, None]:
         """Defines a method to get an int"""
         return self.get(key, int)
+
+
+def replay(method: Callable):
+    """
+    Defines a method to display the history of calls of a particular function.
+    """
+    key = method.__qualname__ + ":inputs"
+    key_outputs = method.__qualname__ + ":outputs"
+
+    inputs = redis_client.lrange(key_inputs, 0, -1)
+    outputs = redis_client.lrange(key_outputs, 0, -1)
+
+    print(f"{method.__qualname__} was called {len(inputs)} times:")
+    for input_data, output_data in zip(inputs, outputs):
+        print(f"{method.__qualname__}(*{input_data.decode('utf-8')}) -> {output_data.decode('utf-8')}")
