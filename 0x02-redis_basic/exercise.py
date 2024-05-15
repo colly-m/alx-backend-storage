@@ -19,17 +19,18 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb()
 
+    @staticmethod
     def count_calls(method: Callable) -> Callable:
         """Defines a method to count the times a cache class is called"""
-        key = method.__qualname__
-
         @wraps(method)
         def wrapper(self, *args, **kwargs):
             """Defines a wrap method of the cache class"""
+            key = method.__qualname__
             self._redis.incr(key)
             return method(self, *args, **kwargs)
         return wrapper
 
+    @count_calls
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """Defines a method to take data then return a string"""
         key = str(uuid.uuid4())
